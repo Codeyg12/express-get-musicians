@@ -5,67 +5,100 @@ execSync("npm run seed");
 
 const request = require("supertest");
 const { db } = require("./db/connection");
-const { Musician } = require("./models/index");
+const { Musician, Band } = require("./models");
 const app = require("./src/app");
 const syncSeed = require("./seed");
 
 describe("Method testing", () => {
   beforeAll(async () => {
-    // connect to and rebuild the db
     await syncSeed();
   });
-  describe("GET", () => {
-    let response;
-    let responeArr;
-    beforeAll(async () => {
-      response = await request(app).get("/musicians");
-      responeArr = JSON.parse(response.text);
-    });
-    test("returns a status code of 200", async () => {
-      expect(response.statusCode).toBe(200);
+  describe("Musicians path", () => {
+    describe("GET", () => {
+      let response;
+      let responeArr;
+      beforeAll(async () => {
+        response = await request(app).get("/musicians");
+        responeArr = JSON.parse(response.text);
+      });
+      test("returns a status code of 200", async () => {
+        expect(response.statusCode).toBe(200);
+      });
+
+      test("returns the full array of Musicians", async () => {
+        expect(Array.isArray(responeArr)).toBeTruthy();
+      });
+
+      test("returns the correct number of Musicians", async () => {
+        expect(responeArr).toHaveLength(3);
+      });
+
+      test("GET/:id returns the correct single Musician", async () => {
+        const response = await request(app).get("/musicians/1");
+        expect(JSON.parse(response.text)).toEqual(
+          expect.objectContaining({
+            name: "Mick Jagger",
+            instrument: "Voice",
+          })
+        );
+      });
     });
 
-    test("returns the full array of Musicians", async () => {
-      expect(Array.isArray(responeArr)).toBeTruthy();
-    });
-
-    test("returns the correct number of Musicians", async () => {
-      expect(responeArr).toHaveLength(3);
-    });
-
-    test("GET/:id returns the correct single Musician", async () => {
-      const response = await request(app).get("/musicians/1");
+    test("POST can create a new musician", async () => {
+      const response = await request(app).post("/musicians").send({
+        name: "Usher",
+        instrument: "Voice",
+      });
       expect(JSON.parse(response.text)).toEqual(
         expect.objectContaining({
-          name: "Mick Jagger",
-          instrument: "Voice",
+          name: "Usher",
         })
       );
     });
-  });
 
-  test("POST can create a new musician", async () => {
-    const response = await request(app).post("/musicians").send({
-      name: "Usher",
-      instrument: "Voice",
+    test("PUT can update an exisiting musician", async () => {
+      const response = await request(app)
+        .put("/musicians/1")
+        .send({ name: "AppleBee" });
+      expect(JSON.parse(response.text).name).toEqual("AppleBee");
     });
-    expect(JSON.parse(response.text)).toEqual(
-      expect.objectContaining({
-        name: "Usher",
-      })
-    );
+
+    test("DELETE can delete a musician", async () => {
+      await request(app).delete("/musicians/1");
+      const musicians = await Musician.findAll();
+      expect(musicians).toHaveLength(3);
+    });
   });
 
-  test("PUT can update an exisiting musician", async () => {
-    const response = await request(app)
-      .put("/musicians/1")
-      .send({ name: "AppleBee" });
-    expect(JSON.parse(response.text).name).toEqual("AppleBee");
-  });
+  describe("Bands path", () => {
+    describe("GET", () => {
+      let response;
+      let responeArr;
+      beforeAll(async () => {
+        response = await request(app).get("/bands");
+        responeArr = JSON.parse(response.text);
+      });
+      test("returns a status code of 200", async () => {
+        expect(response.statusCode).toBe(200);
+      });
 
-  test("DELETE can delete a musician", async () => {
-    await request(app).delete("/musicians/1");
-    const musicians = await Musician.findAll();
-    expect(musicians).toHaveLength(3);
+      test("returns the full array of Bands", async () => {
+        expect(Array.isArray(responeArr)).toBeTruthy();
+      });
+
+      test("returns the correct number of Bands", async () => {
+        expect(responeArr).toHaveLength(3);
+      });
+
+      test("GET/:id returns the correct single Band", async () => {
+        const response = await request(app).get("/bands/1");
+        expect(JSON.parse(response.text)).toEqual(
+          expect.objectContaining({
+            name: "The Beatles",
+            genre: "Rock",
+          })
+        );
+      });
+    });
   });
 });
