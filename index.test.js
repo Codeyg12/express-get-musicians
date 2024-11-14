@@ -59,7 +59,7 @@ describe("Method testing", () => {
     test("PUT can update an exisiting musician", async () => {
       const response = await request(app)
         .put("/musicians/1")
-        .send({ name: "AppleBee" });
+        .send({ name: "AppleBee", instrument: "Drumsticks" });
       expect(JSON.parse(response.text).name).toEqual("AppleBee");
     });
 
@@ -100,5 +100,14 @@ describe("Method testing", () => {
         );
       });
     });
+  });
+
+  test("Error testing", async () => {
+    const response = await request(app)
+      .post("/musicians")
+      .send({ name: "", instrument: "" });
+    const errors = JSON.parse(response.text).error;
+    expect(errors).toHaveLength(4);
+    expect(Array.isArray(errors)).toBeTruthy();
   });
 });
